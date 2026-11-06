@@ -1,4 +1,5 @@
 .venv/
+.venv_fresh/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -9,3 +10,5 @@ data/*
 *.swp
 ~$*
 .DS_Store
+evidence/run*/logs/logs/
+evidence/run*/reports/reports/
