@@ -1,0 +1,16 @@
+{
+  "watched_dirs": ["C:/Users/YourName/Documents/Transfers"],
+  "sensitive_dirs": ["C:/Users/YourName/Documents/Confidential"],
+  "restricted_extensions": [".key", ".pem", ".kdbx"],
+  "restricted_name_keywords": ["password", "salary", "confidential"],
+  "allowed_destinations": ["C:/Users/YourName/Documents/ApprovedBackup"],
+  "external_zones": {
+    "USB": ["E:/"],
+    "CLOUD": ["C:/Users/YourName/OneDrive", "C:/Users/YourName/Dropbox"],
+    "NETWORK_SHARE": ["//server/share"]
+  },
+  "authorized_users": [],
+  "bulk_transfer": {"threshold_files": 50, "window_seconds": 10},
+  "hash_algorithms": ["sha256", "md5"],
+  "ignore_patterns": ["*.tmp", "*.swp", "~$*", ".DS_Store"]
+}

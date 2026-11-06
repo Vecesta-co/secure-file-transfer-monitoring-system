@@ -1,0 +1,16 @@
+{
+  "watched_dirs": ["demo_workspace"],
+  "sensitive_dirs": ["demo_workspace/sensitive"],
+  "restricted_extensions": [".key", ".pem", ".kdbx"],
+  "restricted_name_keywords": ["password", "salary", "confidential"],
+  "allowed_destinations": ["demo_workspace/approved_backup"],
+  "external_zones": {
+    "USB": ["demo_workspace/usb_drive_sim"],
+    "CLOUD": ["demo_workspace/cloud_sync_sim"],
+    "NETWORK_SHARE": ["demo_workspace/network_share_sim"]
+  },
+  "authorized_users": [],
+  "bulk_transfer": {"threshold_files": 50, "window_seconds": 10},
+  "hash_algorithms": ["sha256", "md5"],
+  "ignore_patterns": ["*.tmp", "*.swp", "~$*", ".DS_Store", "desktop.ini"]
+}
