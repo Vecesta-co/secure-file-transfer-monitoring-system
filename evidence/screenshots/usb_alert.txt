@@ -1,0 +1,2 @@
+2026-11-06T20:21:12.652892+00:00 [HIGH] R2: Sensitive file copied to USB drive | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key
+PASS Sensitive file copied to USB drive

@@ -1,0 +1,18 @@
+Secure File Transfer Monitoring System - acceptance checklist
+
+PASS  Scenario 1 - normal copy
+PASS  Scenario 2 - approved sensitive copy
+PASS  Scenario 3 - sensitive USB copy
+PASS  Scenario 4 - sensitive cloud copy
+PASS  Scenario 5 - sensitive move
+PASS  Scenario 6 - altered copy integrity alert
+PASS  Scenario 7 - in-place tamper
+PASS  Scenario 8 - sensitive deletion
+PASS  Scenario 9 - 200-file bulk
+PASS  Objective - event logging
+PASS  Objective - unauthorized movement detection
+PASS  Objective - file integrity
+PASS  Objective - alerts
+PASS  Objective - audit report
+
+Result: 14/14 checks passed
