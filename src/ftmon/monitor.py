@@ -69,13 +69,18 @@ class TransferMonitor:
     def _hash(self, path: Path) -> dict:
         return hash_file(path, self.policy.values.get("hash_algorithms", ["sha256", "md5"]))
 
-    def _process(self, _path: Path) -> str:
+    def _process(self, path: Path) -> str:
         # psutil is optional; process-to-open-file attribution is best-effort.
         try:
             import psutil  # type: ignore
+            target = str(path.resolve()).casefold()
             for proc in psutil.process_iter(["name", "open_files"]):
-                if proc.info.get("open_files"):
-                    return proc.info.get("name") or "unknown"
+                for opened in proc.info.get("open_files") or []:
+                    try:
+                        if str(Path(opened.path).resolve()).casefold() == target:
+                            return proc.info.get("name") or "unknown"
+                    except (OSError, TypeError, ValueError):
+                        continue
         except Exception:
             pass
         return "unknown"
@@ -195,13 +200,13 @@ class TransferMonitor:
             entries.append((now, event))
             window = float(self.policy.values.get("bulk_transfer", {}).get("window_seconds", 10))
             self.bulk[directory] = [(t, e) for t, e in entries if now - t <= window]
-            timer = self.bulk_timers.get(directory)
-            if timer:
-                timer.cancel()
-            timer = threading.Timer(0.6, self._flush_bulk, args=(directory,))
-            timer.daemon = True
-            self.bulk_timers[directory] = timer
-            timer.start()
+            # Anchor one timer to the start of the configured window. Resetting
+            # it on every event can split a slow transfer into repeated alerts.
+            if directory not in self.bulk_timers:
+                timer = threading.Timer(window, self._flush_bulk, args=(directory,))
+                timer.daemon = True
+                self.bulk_timers[directory] = timer
+                timer.start()
 
     def _flush_bulk(self, directory: str) -> None:
         with self.lock:

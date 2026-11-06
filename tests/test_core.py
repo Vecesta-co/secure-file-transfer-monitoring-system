@@ -1,6 +1,8 @@
 import hashlib
 import json
+import sys
 import time
+import types
 from pathlib import Path
 
 from ftmon.hasher import hash_file
@@ -79,6 +81,51 @@ def test_bulk_window_aggregates_real_count(tmp_path):
     monitor._flush_bulk(directory)
     alerts = (tmp_path / "logs" / "alerts.log").read_text()
     assert "Suspicious movement: 3 files transferred to unknown directory" in alerts
+
+
+def test_bulk_window_emits_once_when_events_arrive_slowly(tmp_path):
+    policy = Policy({**values(), "bulk_transfer": {"threshold_files": 1, "window_seconds": .4}}, tmp_path)
+    monitor = TransferMonitor(policy, tmp_path)
+    directory = str(tmp_path / "watched" / "unknown")
+    event = {"event_type": "CREATE", "dest_path": str(Path(directory) / "x.txt"), "dest_zone": "INTERNAL",
+             "timestamp": "test", "user": "tester", "process": "unknown", "severity": "INFO", "rule_id": "R0", "message": "created"}
+    start = time.monotonic()
+    for i in range(4):
+        monitor._count_bulk({**event, "dest_path": str(Path(directory) / f"{i}.txt")}, start + i * .05)
+        time.sleep(.06)
+    time.sleep(.45)
+    records = [json.loads(line) for line in (tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()]
+    bulk = [event for event in records if event.get("rule_id") == "R4"]
+    assert len(bulk) == 1
+    assert bulk[0]["message"] == "Suspicious movement: 4 files transferred to unknown directory"
+
+
+def test_process_attribution_only_matches_opened_path(tmp_path, monkeypatch):
+    target = tmp_path / "watched" / "private" / "a.key"
+    other = tmp_path / "other.txt"
+    class Proc:
+        def __init__(self, name, opened):
+            self.info = {"name": name, "open_files": [types.SimpleNamespace(path=str(opened))]}
+    fake = types.SimpleNamespace(process_iter=lambda _attrs: [Proc("unrelated.exe", other), Proc("writer.exe", target)])
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    monitor = TransferMonitor(Policy(values(), tmp_path), tmp_path)
+    assert monitor._process(target) == "writer.exe"
+
+
+def test_authorized_user_policy_fires_for_current_and_allows_listed_user(tmp_path, monkeypatch):
+    policy = Policy({**values(), "authorized_users": ["approved-user"]}, tmp_path)
+    monitor = TransferMonitor(policy, tmp_path)
+    secret = tmp_path / "watched" / "private" / "confidential.txt"
+    secret.parent.mkdir(parents=True)
+    secret.write_text("private")
+    monkeypatch.setattr("ftmon.monitor.getpass.getuser", lambda: "current-user")
+    monitor._handle("CREATE", secret)
+    event = json.loads((tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()[-1])
+    assert "R6" in event["rule_id"]
+    allowed = Policy({**values(), "authorized_users": ["current-user"]}, tmp_path)
+    assert allowed.is_authorized_user("current-user")
+    assert not any(rule == "R6" for rule, _severity, _message in evaluate(
+        {"event_type": "CREATE", "sensitive": True, "dest_zone": "INTERNAL", "user": "current-user"}, allowed))
 
 
 def test_report_generation(tmp_path):

@@ -24,7 +24,7 @@ def main() -> int:
     alert_text = args.alerts.read_text(encoding="utf-8") if args.alerts.exists() else ""
     has = lambda kind, part="": any(e.get("event_type") == kind and part.lower() in (e.get("src_path", "") + " " + e.get("dest_path", "")).lower() for e in events)
     checks = [
-        ("Scenario 1 - normal copy", has("COPY", "meeting_notes_copy.txt")),
+        ("Scenario 1 - normal copy", any(e.get("event_type") == "COPY" and "meeting_notes_copy.txt" in e.get("dest_path", "") and e.get("rule_id") == "R0" and e.get("severity") == "INFO" for e in events)),
         ("Scenario 2 - approved sensitive copy", any(e.get("message") == "Authorized transfer" and "approved_backup" in e.get("dest_path", "") for e in events)),
         ("Scenario 3 - sensitive USB copy", "Sensitive file copied to USB drive" in alert_text),
         ("Scenario 4 - sensitive cloud copy", "Sensitive file copied to cloud folder" in alert_text),
@@ -32,7 +32,9 @@ def main() -> int:
         ("Scenario 6 - altered copy integrity alert", any(e.get("rule_id", "").find("R3") >= 0 and "network_share_sim" in e.get("src_path", "") for e in events)),
         ("Scenario 7 - in-place tamper", any(e.get("rule_id", "").find("R3") >= 0 and "sensitive/client_database.csv" in e.get("src_path", "").lower().replace("\\", "/") for e in events)),
         ("Scenario 8 - sensitive deletion", has("DELETE", "server.key")),
-        ("Scenario 9 - 200-file bulk", any(e.get("rule_id") == "R4" and "200 files" in e.get("message", "") for e in events)),
+        ("Scenario 9 - one accurate 200-file bulk alert", sum(1 for e in events if e.get("rule_id") == "R4") == 1 and any(e.get("rule_id") == "R4" and e.get("message") == "Suspicious movement: 200 files transferred to unknown directory" for e in events)),
+        ("Event records have required fields", all(all(k in e for k in ("timestamp", "src_path", "dest_path", "user", "process")) for e in events)),
+        ("Control scenarios have no high/critical alerts", all(e.get("severity") not in {"HIGH", "CRITICAL"} for e in events if e.get("event_type") == "COPY" and ("meeting_notes_copy.txt" in e.get("dest_path", "") or "approved_backup" in e.get("dest_path", "")))),
         ("Objective - event logging", len(events) >= 200 and args.events.exists()),
         ("Objective - unauthorized movement detection", "R1" in alert_text and "R2" in alert_text),
         ("Objective - file integrity", "Integrity Failure: File hash mismatch detected" in alert_text),

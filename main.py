@@ -13,9 +13,9 @@ from ftmon.baseline import create_baseline  # noqa: E402
 from ftmon.policy import DEFAULT_POLICY, load_policy  # noqa: E402
 
 
-def run_demo(clean: bool = True) -> int:
+def run_demo(clean: bool = True, pace: float = 0, color: bool = True) -> int:
     from demo.run_demo import run
-    return run(clean=clean)
+    return run(clean=clean, pace=pace, color=color)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,7 +26,10 @@ def main(argv: list[str] | None = None) -> int:
         cmd.add_argument("--policy", default=str(DEFAULT_POLICY))
     verify = sub.add_parser("verify"); verify.add_argument("source_file"); verify.add_argument("copied_file")
     hashing = sub.add_parser("hash"); hashing.add_argument("file")
-    demo = sub.add_parser("demo"); demo.add_argument("--clean", action="store_true", help="explicitly start from a clean demo state")
+    demo = sub.add_parser("demo")
+    demo.add_argument("--clean", action="store_true", help="start from a clean demo state (default behavior)")
+    demo.add_argument("--pace", type=float, default=0, metavar="SECONDS", help="pause between scenario starts")
+    demo.add_argument("--no-color", action="store_true", help="disable ANSI console colors")
     args = parser.parse_args(argv)
     if args.command == "hash":
         try:
@@ -43,7 +46,9 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as exc:
             print(f"ERROR: {exc}", file=sys.stderr); return 2
     if args.command == "demo":
-        return run_demo(clean=True)
+        if args.pace < 0:
+            parser.error("--pace must be zero or greater")
+        return run_demo(clean=True, pace=args.pace, color=not args.no_color)
     policy = load_policy(args.policy)
     if args.command == "baseline":
         output = ROOT / "data" / "baseline.json"

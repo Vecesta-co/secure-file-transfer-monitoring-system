@@ -12,6 +12,7 @@ from ftmon.baseline import create_baseline  # noqa: E402
 from ftmon.monitor import TransferMonitor  # noqa: E402
 from ftmon.policy import load_policy  # noqa: E402
 from ftmon.report import generate_report  # noqa: E402
+from ftmon.logger import configure_colors  # noqa: E402
 
 WORK = ROOT / "demo_workspace"
 DIRS = ["documents", "sensitive", "approved_backup", "usb_drive_sim", "cloud_sync_sim", "network_share_sim", "unknown_dir"]
@@ -53,7 +54,8 @@ def _rel(path: Path) -> str:
     return path.resolve().relative_to(ROOT).as_posix()
 
 
-def run(clean: bool = True) -> int:
+def run(clean: bool = True, pace: float = 0, color: bool = True) -> int:
+    configure_colors(color)
     if clean:
         for folder in (WORK, ROOT / "logs", ROOT / "reports", ROOT / "data"):
             _clear_contents(folder)
@@ -66,6 +68,9 @@ def run(clean: bool = True) -> int:
     (WORK / "sensitive" / "server.key").write_text("FAKE KEY MATERIAL FOR DEMO ONLY\n", encoding="utf-8")
     policy = load_policy(ROOT / "config" / "policy.json")
     count = create_baseline(policy, ROOT / "data" / "baseline.json")
+    print("=" * 72)
+    print("SECURE FILE TRANSFER MONITORING SYSTEM  |  SYNTHETIC DEMO")
+    print("=" * 72)
     print(f"Baseline created for {len(count)} synthetic files")
     monitor = TransferMonitor(policy, ROOT)
     monitor.start()
@@ -76,7 +81,12 @@ def run(clean: bool = True) -> int:
         "Altered copy to network share", "In-place sensitive file tamper", "Sensitive file deletion", "200-file bulk transfer"
     ]
     def scenario(i):
-        print(f"\nSCENARIO {i}/9: {scenarios[i-1]}", flush=True)
+        line = f"SCENARIO {i}/9 -- {scenarios[i-1]}"
+        if color and sys.stdout.isatty():
+            line = f"\033[96m{line}\033[0m"
+        print(f"\n{line}", flush=True)
+        if pace:
+            time.sleep(pace)
     try:
         scenario(1); p = WORK / "documents" / "meeting_notes_copy.txt"; shutil.copy2(WORK / "documents" / "meeting_notes.txt", p); assert _logged(lambda es: any(e.get("dest_path") == _rel(p) for e in es))
         scenario(2); p = WORK / "approved_backup" / "employee_salaries.csv"; shutil.copy2(WORK / "sensitive" / "employee_salaries.csv", p); assert _logged(lambda es: any(e.get("dest_path") == _rel(p) for e in es))
@@ -89,17 +99,32 @@ def run(clean: bool = True) -> int:
         scenario(9); bulk = WORK / "unknown_dir" / "bulk"; bulk.mkdir(exist_ok=True)
         for i in range(200): (bulk / f"tiny_{i:03}.txt").write_text(f"dummy {i}\n", encoding="utf-8")
         assert _logged(lambda es: sum(1 for e in es if e.get("event_type") == "CREATE" and _rel(bulk) in e.get("src_path", "")) >= 200, timeout=180)
-        _wait_for(lambda: alerts_file.exists() and "Suspicious movement: 200 files transferred to unknown directory" in alerts_file.read_text(encoding="utf-8"), timeout=5)
     finally:
         monitor.stop()
     summary = generate_report(ROOT)
     alerts = alerts_file.read_text(encoding="utf-8") if alerts_file.exists() else ""
+    records = []
+    for line in (ROOT / "logs" / "file_events.jsonl").read_text(encoding="utf-8").splitlines():
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
     expected = ["Sensitive file copied to USB drive", "Integrity Failure: File hash mismatch detected", "Suspicious movement: 200 files transferred to unknown directory"]
-    ok = all(msg in alerts for msg in expected)
-    print("\nFINAL SUMMARY")
-    print(json.dumps(summary, indent=2))
-    print("Expected alerts:")
-    for msg in expected: print(f"{'PASS' if msg in alerts else 'FAIL'} {msg}")
+    bulk_records = [event for event in records if event.get("rule_id") == "R4"]
+    ok = all(msg in alerts for msg in expected) and len(bulk_records) == 1 and "200 files" in bulk_records[0].get("message", "")
+    print("\n+" + "-" * 68 + "+")
+    print("| FINAL SUMMARY".ljust(69) + "|")
+    print("+" + "-" * 68 + "+")
+    print(f"| Events: {summary['events']:<10} INFO: {summary['severities'].get('INFO', 0):<8} HIGH: {summary['severities'].get('HIGH', 0):<8} CRITICAL: {summary['severities'].get('CRITICAL', 0):<5}|")
+    print("| Required alert checks:".ljust(69) + "|")
+    for msg in expected:
+        print(f"| [{'PASS' if msg in alerts else 'FAIL'}] {msg}".ljust(69) + "|")
+    print("+" + "-" * 68 + "+")
+    alert_lines = alerts.splitlines()
+    print(f"Alerts written: {len(alert_lines)}")
+    for line in alert_lines:
+        print(f"  {line}")
+    print("Event counts: " + ", ".join(f"{name}={n}" for name, n in sorted(summary["event_counts"].items())))
     print("Reports: reports/audit_report.md, reports/audit_report.html, reports/events.csv")
     return 0 if ok else 1
 
