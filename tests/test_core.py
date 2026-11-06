@@ -1,6 +1,7 @@
 import hashlib
 import json
 import sys
+import threading
 import time
 import types
 from pathlib import Path
@@ -31,6 +32,41 @@ def test_hash_known_vector(tmp_path):
     assert result["md5"] == hashlib.md5(b"abc").hexdigest()
 
 
+def test_hash_empty_unicode_and_50mb_file(tmp_path):
+    empty = tmp_path / "empty (QA) ü.txt"
+    empty.write_bytes(b"")
+    assert hash_file(empty, ["sha256"])["sha256"] == hashlib.sha256(b"").hexdigest()
+    large = tmp_path / "50 MB (large) ü.bin"
+    payload = b"FTMON-50MB-" * (50 * 1024 * 1024 // 11) + b"x"
+    large.write_bytes(payload)
+    start = time.monotonic()
+    actual = hash_file(large, ["sha256"])["sha256"]
+    assert actual == hashlib.sha256(payload).hexdigest()
+    assert time.monotonic() - start < 10
+
+
+def test_hash_waits_for_a_file_still_being_written(tmp_path):
+    path = tmp_path / "nested" / "writing file (QA) ü.txt"
+    path.parent.mkdir()
+    expected = b""
+    parts = [bytes([65 + i]) * 1024 for i in range(12)]
+    def writer():
+        with path.open("wb") as stream:
+            for part in parts:
+                stream.write(part)
+                stream.flush()
+                time.sleep(.05)
+    thread = threading.Thread(target=writer)
+    thread.start()
+    while not path.exists():
+        time.sleep(.005)
+    result = hash_file(path, ["sha256"])["sha256"]
+    thread.join(timeout=2)
+    expected = b"".join(parts)
+    assert not thread.is_alive()
+    assert result == hashlib.sha256(expected).hexdigest()
+
+
 def test_policy_sensitive_zone_and_authorization(tmp_path):
     policy = Policy(values(), tmp_path)
     assert policy.is_sensitive(tmp_path / "watched/private/a.txt")
@@ -40,6 +76,17 @@ def test_policy_sensitive_zone_and_authorization(tmp_path):
     assert policy.zone_of("watched/approved/a.txt") == "ALLOWED"
     assert policy.zone_of("watched/a.txt") == "INTERNAL"
     assert policy.is_authorized_user("any-user")
+
+
+def test_missing_policy_paths_and_real_world_windows_zones(tmp_path):
+    missing = Policy({**values(), "watched_dirs": ["missing/folder"]}, tmp_path)
+    assert not missing.watched[0].exists()
+    assert missing.zone_of("missing/folder/file.txt") == "INTERNAL"
+    assert missing.zone_of("elsewhere/file.txt") == "UNKNOWN"
+    example = Policy(json.loads((Path(__file__).resolve().parents[1] / "config" / "policy.real-world.example.json").read_text()), tmp_path)
+    assert example.zone_of("e:/AuditCase/file.key") == "USB"
+    assert example.zone_of("C:/USERS/YOuRName/ONEDRIVE/Reports/file.key") == "CLOUD"
+    assert example.zone_of("//SERVER/SHARE/Reports/file.key") == "NETWORK_SHARE"
 
 
 def test_policy_rules_integrity_and_access(tmp_path):
@@ -69,6 +116,38 @@ def test_copy_detection_and_integrity_mismatch(tmp_path):
     monitor._handle("MODIFY", copy)
     events = [json.loads(x) for x in (tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()]
     assert events[-1]["integrity"] == "MISMATCH"
+
+
+def test_quick_successive_content_changes_are_not_deduplicated(tmp_path):
+    policy = Policy(values(), tmp_path)
+    source = tmp_path / "watched" / "private" / "rapid.txt"
+    source.parent.mkdir(parents=True)
+    source.write_text("original")
+    baseline = tmp_path / "data" / "baseline.json"
+    create_baseline(policy, baseline)
+    monitor = TransferMonitor(policy, tmp_path, baseline)
+    source.write_text("changed1")
+    monitor._handle("MODIFY", source)
+    source.write_text("changed2")
+    monitor._handle("MODIFY", source)
+    events = [json.loads(line) for line in (tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()]
+    assert len(events) == 2
+    assert all(event["integrity"] == "MISMATCH" for event in events)
+
+
+def test_metadata_only_notification_does_not_create_duplicate_change(tmp_path):
+    policy = Policy(values(), tmp_path)
+    source = tmp_path / "watched" / "private" / "same-content.txt"
+    source.parent.mkdir(parents=True)
+    source.write_text("unchanged")
+    baseline = tmp_path / "data" / "baseline.json"
+    create_baseline(policy, baseline)
+    monitor = TransferMonitor(policy, tmp_path, baseline)
+    before = source.stat().st_mtime
+    import os
+    os.utime(source, (before + 2, before + 2))
+    monitor._handle("MODIFY", source)
+    assert not (tmp_path / "logs" / "file_events.jsonl").exists()
 
 
 def test_bulk_window_aggregates_real_count(tmp_path):
@@ -110,6 +189,19 @@ def test_process_attribution_only_matches_opened_path(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "psutil", fake)
     monitor = TransferMonitor(Policy(values(), tmp_path), tmp_path)
     assert monitor._process(target) == "writer.exe"
+
+
+def test_external_configured_paths_are_logged_without_user_directory(tmp_path):
+    root = tmp_path / "project"
+    external = tmp_path / "external-drive"
+    root.mkdir(); external.mkdir()
+    values_outside = {**values(), "watched_dirs": [str(external)],
+                      "external_zones": {"CLOUD": [str(external / "OneDrive")]}}
+    policy = Policy(values_outside, root)
+    monitor = TransferMonitor(policy, root)
+    shown = monitor._display(external / "OneDrive" / "Personal" / "file.txt")
+    assert shown == "CLOUD:/Personal/file.txt"
+    assert "external-drive" not in shown
 
 
 def test_authorized_user_policy_fires_for_current_and_allows_listed_user(tmp_path, monkeypatch):

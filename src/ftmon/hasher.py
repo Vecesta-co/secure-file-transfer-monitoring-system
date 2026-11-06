@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def wait_until_stable(path: Path, timeout: float = 3.0) -> bool:
-    """Wait for a file's size to remain unchanged for two polls."""
+    """Wait for a file's size to remain unchanged across three polls."""
     deadline, previous, stable = time.monotonic() + timeout, None, 0
     while time.monotonic() < deadline:
         try:
@@ -15,7 +15,7 @@ def wait_until_stable(path: Path, timeout: float = 3.0) -> bool:
             time.sleep(0.2)
             continue
         stable = stable + 1 if size == previous else 0
-        if stable >= 1:
+        if stable >= 2:
             return True
         previous = size
         time.sleep(0.2)

@@ -4,6 +4,7 @@ import getpass
 import json
 import threading
 import time
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from watchdog.observers import Observer
@@ -20,11 +21,13 @@ class TransferMonitor:
         self.baseline_path = baseline_path or self.root / "data" / "baseline.json"
         self.index: dict[str, dict] = {}
         self.by_hash: dict[str, list[str]] = {}
-        self.last_events: dict[tuple, float] = {}
+        self.last_events: dict[tuple, tuple[float, tuple | None]] = {}
         self.bulk: dict[str, list] = {}
         self.bulk_timers: dict[str, threading.Timer] = {}
         self.pending_deletes: dict[str, tuple[threading.Timer, dict, float]] = {}
         self.lock = threading.RLock()
+        self.path_lock_guard = threading.Lock()
+        self.path_locks: dict[str, tuple[threading.Lock, int]] = {}
         self.observer = Observer()
         self.executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="ftmon-event")
         self._load_index()
@@ -39,6 +42,15 @@ class TransferMonitor:
         try:
             return p.relative_to(self.root).as_posix()
         except ValueError:
+            anchors = []
+            for zone, paths in self.policy.zones.items():
+                anchors.extend((zone, folder) for folder in paths)
+            anchors.extend(("APPROVED", folder) for folder in self.policy.allowed)
+            anchors.extend((f"WATCHED-{i + 1}", folder) for i, folder in enumerate(self.policy.watched))
+            matches = [(label, folder) for label, folder in anchors if self.policy.contains(folder, p)]
+            if matches:
+                label, folder = max(matches, key=lambda item: len(str(item[1])))
+                return f"{label}:/{p.relative_to(folder).as_posix()}"
             return str(p)
 
     def _load_index(self) -> None:
@@ -65,6 +77,25 @@ class TransferMonitor:
             if meta and meta.get("sha256"):
                 self.by_hash[meta["sha256"]] = [p for p in self.by_hash.get(meta["sha256"], []) if p != key]
             return meta
+
+    @contextmanager
+    def _event_path_lock(self, path: Path):
+        """Serialize notifications for one path while allowing other files in parallel."""
+        key = self._key(path)
+        with self.path_lock_guard:
+            lock, users = self.path_locks.get(key, (threading.Lock(), 0))
+            self.path_locks[key] = (lock, users + 1)
+        lock.acquire()
+        try:
+            yield
+        finally:
+            lock.release()
+            with self.path_lock_guard:
+                current_lock, users = self.path_locks[key]
+                if users == 1:
+                    self.path_locks.pop(key, None)
+                else:
+                    self.path_locks[key] = (current_lock, users - 1)
 
     def _hash(self, path: Path) -> dict:
         return hash_file(path, self.policy.values.get("hash_algorithms", ["sha256", "md5"]))
@@ -105,15 +136,20 @@ class TransferMonitor:
         for directory in list(self.bulk):
             self._flush_bulk(directory)
 
-    def _dedup(self, event_type: str, src: str, dest: str) -> bool:
+    def _dedup(self, event_type: str, src: str, dest: str, fingerprint: tuple | None) -> bool:
         now = time.monotonic()
         key = (event_type, src, dest)
-        if now - self.last_events.get(key, 0) < 0.5:
+        previous = self.last_events.get(key)
+        if previous and now - previous[0] < 0.5 and previous[1] == fingerprint:
             return True
-        self.last_events[key] = now
+        self.last_events[key] = (now, fingerprint)
         return False
 
     def _handle(self, event_type: str, src: Path, dest: Path | None = None, observed_at: float | None = None) -> None:
+        with self._event_path_lock(src):
+            self._handle_locked(event_type, src, dest, observed_at)
+
+    def _handle_locked(self, event_type: str, src: Path, dest: Path | None = None, observed_at: float | None = None) -> None:
         try:
             import fnmatch
             if any(fnmatch.fnmatch(src.name, pat) for pat in self.policy.values.get("ignore_patterns", [])):
@@ -121,7 +157,12 @@ class TransferMonitor:
             if src.is_dir() and (dest is None or dest.is_dir()):
                 return
             dest = dest or src
-            if self._dedup(event_type, str(src), str(dest)):
+            try:
+                stat = src.stat()
+                fingerprint = (stat.st_size, stat.st_mtime_ns)
+            except OSError:
+                fingerprint = None
+            if self._dedup(event_type, str(src), str(dest), fingerprint):
                 return
             old = self.index.get(self._key(src))
             before = (old or {}).get("sha256", "")
@@ -135,6 +176,13 @@ class TransferMonitor:
                     pass
             if event_type != "DELETE" and dest.exists() and dest.is_file():
                 after = self._hash(dest).get("sha256", "")
+            if event_type == "MODIFY" and old and before and after == before:
+                # OneDrive and some watchdog backends can emit metadata-only
+                # modifications. Keep the index fresh without logging noise.
+                if dest.exists() and dest.is_file():
+                    st = dest.stat()
+                    self._add_index(dest, {**old, **self._hash(dest), "size": st.st_size, "mtime_ns": st.st_mtime_ns})
+                return
             kind, sensitive, integrity, source = event_type, self.policy.is_sensitive(src), "N/A", str(src)
             pending = self._take_pending_move(dest, after) if event_type == "CREATE" else None
             if pending:
