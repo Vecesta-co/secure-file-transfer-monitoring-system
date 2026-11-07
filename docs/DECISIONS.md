@@ -1,12 +1,14 @@
-# Decisions
+# Design decisions
 
-- **Runtime and evidence:** Python 3.11 on Windows is the available build environment. Cross-platform behavior is implemented with pathlib and watchdog, but this session can directly verify Windows only.
-- **Demo timing:** the automatic demo uses brief polling-based waits for filesystem notifications; scenarios are deterministic and all demo content is synthetic.
-- **Optional process attribution:** `psutil` is not installed. The monitor records `unknown` as permitted by the brief.
-- **PDF and DOCX rendering:** no LibreOffice `soffice.exe`, `docx2pdf`, or Word executable is available. PDF export and visual DOCX rendering were skipped. The DOCX was re-opened and checked with python-docx; the PPTX was rendered and visually inspected.
-- **Draw.io:** draw.io XML is omitted; the architecture and flowchart are repeatable PNG outputs from `tools/make_docs.py`.
-- **Path privacy:** paths inside the project root are logged relative to that root, keeping machine-specific user paths out of evidence. Configured paths outside the root remain absolute at runtime.
-- **Windows move events:** this watchdog backend reports some renames as delete/create pairs. A brief delete delay correlates the pair so the event is recorded as MOVE rather than DELETE plus CREATE.
-- **Fresh environment test:** Windows denied `python -m venv --clear .venv` while trying to remove `.venv\Include`; a newly created `.venv_fresh` installed the pinned requirements and was used for the clean-install verification instead.
-- **Authorization:** empty `authorized_users` means local users are treated as authorized. A sensitive transfer to an explicitly approved destination is recorded as `Authorized transfer`.
-- **Local Git identity:** Git had no configured author identity; repository-local commits use Project Intern <project-intern@localhost> and do not modify global Git settings.
+- **Runtime:** Python 3.11 on Windows is the available verification platform. Paths use pathlib and monitoring uses watchdog; other systems still need direct checks.
+- **Evidence:** The demo uses synthetic dummy data and local JSONL, alert, report, screenshot, and office files. Final totals are derived from the frozen run folders.
+- **Monitoring scope:** The project records observed file changes; it does not block activity or inspect network protocols. USB, cloud, and network-share labels come from configured folders.
+- **Stable hashing:** Files are read in chunks after three equal-size polls. This reduces the chance of hashing during a write; it cannot guarantee stability against every writer or filesystem.
+- **Process attribution:** psutil is optional. The monitor only returns a process whose reported open-file path matches the event path. When that data is absent it records `unknown`.
+- **Bulk rule:** Each destination uses a fixed window anchored at its first event. The synthetic policy uses a 60-second window so all 200 demo writes produce one accurate summary in the OneDrive environment.
+- **Windows notifications:** Rename operations can arrive as delete/create pairs. A short correlation delay joins likely pairs; sync tools can still add metadata or rename noise.
+- **Path privacy:** Paths inside the project are relative. External configured paths are logged relative to a named zone or watched root where possible.
+- **Authorization:** An empty `authorized_users` list allows the local user. A non-empty list allows only listed usernames. Windows open/read access is not monitored, so R6 applies to events the watcher observes.
+- **Office rendering:** DOCX visual rendering and PDF export were skipped because Word and LibreOffice are not installed. The generated PPTX is rendered with the bundled presentation renderer.
+- **Draw.io:** Editable `.drawio` mxfile diagrams are generated alongside the high-resolution PNGs and checked as XML.
+- **Git identity:** Repository-local commits use `Project Intern <project-intern@localhost>`; global Git settings were not modified.

@@ -1,65 +1,59 @@
-# Code walkthrough
+# Beginner code walkthrough
 
-## `main.py`
-- Defines the command-line interface and dispatches baseline, monitor, report, hash, verify, and demo actions.
-- Uses `argparse` so command names and options stay discoverable.
-- The `baseline` command calls the baseline builder and saves hashes under `data/`.
-- The `monitor` command starts the observer and stops it cleanly after Ctrl+C.
-- The `hash` and `verify` commands expose integrity checks without requiring the monitor.
+## What happens when a file changes
 
-## `src/ftmon/hasher.py`
-- `wait_until_stable` polls file size so hashing does not race a write in progress.
-- `hash_file` reads in chunks and creates any requested hashlib digest.
-- Temporary permission and disappearance errors are retried a few times.
-- Keeping this code separate makes the hash behavior easy to test.
+The program follows a simple chain: it watches a folder, identifies the path and change, checks the policy, compares file hashes when possible, writes an event, and later builds a report. The JSON policy tells the monitor which folders are sensitive and which destinations represent approved backup, USB, cloud, or network-share locations.
 
-## `src/ftmon/policy.py`
-- `Policy` resolves configured paths against the project root.
-- `is_sensitive` checks directory membership, extensions, and name keywords.
-- `zone_of` labels approved, internal, USB, cloud, network-share, and unknown paths.
-- `is_authorized_user` implements the empty-list policy rule.
-- `evaluate` returns rule IDs, severity, and messages for one event.
+## Hash integrity in plain language
 
-## `src/ftmon/baseline.py`
-- `create_baseline` walks the configured folders and hashes each readable file.
-- The baseline stores SHA-256, MD5, size, and modification time for later comparisons.
-- Unreadable or disappearing files are skipped so one path does not stop the initial scan.
+A hash is a short fingerprint calculated from a file's bytes. SHA-256 is deterministic: identical content gives the same fingerprint. If one byte changes, the fingerprint changes. The baseline stores the first fingerprint. When a later event produces a different value, rule R3 reports an integrity mismatch. A hash does not prove that the original content was safe, so the baseline must come from a trusted state.
 
-## `src/ftmon/logger.py`
-- `write_event` appends structured event dictionaries to JSONL.
-- `write_alert` appends readable alerts and prints them to the terminal.
-- A shared thread lock prevents concurrent observer workers from mixing log lines.
-- ANSI colors are used only when standard output is interactive.
+## File transfer monitoring and DLP
 
-## `src/ftmon/monitor.py`
-- `TransferMonitor` loads the baseline and maintains path and hash indexes.
-- It turns filesystem notifications into create, copy, move, delete, or modify records.
-- A worker pool handles event bursts while preserving error isolation.
-- A short delete delay joins Windows delete/create rename pairs into a move.
-- Bulk events are aggregated by destination and time window.
+The project uses folder notifications as signals that a file was created, changed, renamed, or removed. A native notification does not always say “copy,” so the monitor compares content and paths to infer a copy-like event. Data-loss prevention (DLP) describes rules that help identify sensitive information moving to an unapproved place. Here, R1 and R2 implement a small path-based example. The monitor records and alerts; it does not block the operation.
 
-## `src/ftmon/handler.py`
-- `MonitorHandler` is the small adapter between watchdog and `TransferMonitor`.
-- It submits created, modified, and moved files to the monitor's worker pool.
-- It sends deletes through a short delay so Windows rename pairs can be recognized.
+## Auditing
 
-## `src/ftmon/report.py`
-- Reads JSON Lines defensively, skipping malformed records.
-- Builds totals, violation and integrity tables, top users/processes, and a full event timeline.
-- Writes Markdown, CSV, and a standalone HTML report with highlighted findings.
-- The generator returns summary counts for the CLI and acceptance checks.
+Each event is written as JSON on its own line. JSON Lines is convenient because new events can be appended while the program runs. The separate alert log is easier to read quickly. The report generator summarizes event types, severities, rule findings, integrity results, users, processes, and the full timeline. Keeping both detailed records and a summary supports later review.
 
-## `demo/run_demo.py`
-- Recreates only synthetic content under `demo_workspace/`.
-- Runs the baseline and monitor, then performs nine readable scenarios.
-- Polls the real JSONL log for expected events rather than assuming a fixed delay is enough.
-- Confirms the three required sample alert messages before exiting successfully.
+## Source files
 
-## `tools/verify_all.py`
-- Reads the current demo event and alert logs.
-- Prints a PASS/FAIL checklist for all nine scenarios and five project objectives.
-- Saves the same checklist in `evidence/verify_all.txt`.
+- `main.py` defines the commands and sends each command to the appropriate module.
+- `config/policy.json` contains watched folders, sensitive locations, approved destinations, external zones, and ignored file names.
+- `src/ftmon/hasher.py` waits briefly for a stable file and calculates requested digests in chunks.
+- `src/ftmon/baseline.py` scans the watched folders and stores starting hashes and metadata.
+- `src/ftmon/policy.py` resolves paths, labels zones, checks usernames, and applies R0–R6.
+- `src/ftmon/handler.py` receives watchdog notifications and submits work.
+- `src/ftmon/monitor.py` keeps path/hash indexes, correlates some Windows rename notifications, checks integrity, and groups bulk activity.
+- `src/ftmon/logger.py` writes event and alert records.
+- `src/ftmon/report.py` converts JSONL events into Markdown, HTML, and CSV.
+- `demo/run_demo.py` creates safe dummy files and executes the nine example scenarios.
+- `tools/verify_all.py` checks the expected scenarios and essential output fields.
 
-## Tests
-- `tests/test_core.py` covers hashing, policy, rules, copy detection, bulk aggregation, reports, and a real watchdog event.
-- The end-to-end monitor test uses polling with a timeout, avoiding a fixed sleep as the success condition.
+## Detection rules
+
+| Rule | Meaning |
+|---|---|
+| R0 | Record routine or approved activity. |
+| R1 | Sensitive file moved or copied outside an approved folder. |
+| R2 | File entered a configured USB, cloud, or network-share zone. |
+| R3 | SHA-256 changed from the indexed value. |
+| R4 | File count passed the configured burst threshold in a window. |
+| R5 | Sensitive file was deleted. |
+| R6 | Observed sensitive activity came from a user outside the allow-list. |
+
+## Run the project
+
+From PowerShell in the project folder:
+
+```powershell
+python main.py demo --clean --pace 3
+python -m pytest -q
+python main.py report
+```
+
+The demo uses only its synthetic workspace. The report command summarizes the current event log.
+
+## Important limits
+
+Configured paths stand in for external destinations; the program does not detect USB hardware or inspect network traffic. Windows open/read access is not monitored. Process attribution uses optional psutil data and remains `unknown` when no matching open-file information is available. Filesystem notification timing varies, especially in synchronized folders, so deployments need platform-specific verification.

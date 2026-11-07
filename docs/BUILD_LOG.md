@@ -2,7 +2,7 @@
 
 ## Phase 0 — Environment
 - Checked Python 3.11.9 and Git 2.56.0 on Windows; initialized the local repository on `main`.
-- Created `.venv` and installed watchdog, pytest, python-docx, python-pptx, Pillow, and matplotlib. First package install encountered a transient Windows file-lock (`WinError 32`) during concurrent package setup; rerunning sequentially succeeded.
+- Created a local Python environment and installed watchdog, pytest, python-docx, python-pptx, Pillow, and matplotlib. First package install encountered a transient Windows file-lock (`WinError 32`) during concurrent package setup; rerunning sequentially succeeded.
 - Created the requested directory skeleton and pinned direct dependencies in `requirements.txt`.
 - Result: environment ready. No external services or network features are part of the application.
 
@@ -28,7 +28,7 @@
 
 ## Phase 5 — Tests
 - Added seven tests covering known hashes, path policy, rule evaluation, copy and integrity detection, bulk aggregation, report output, and a polling-based watchdog test.
-- Ran `python -m pytest -q` twice in the freshly created `.venv_fresh` after the monitor/baseline module split: both runs passed 7 tests (3.42 and 3.40 seconds).
+- Ran `python -m pytest -q` twice in a fresh local Python environment after the monitor/baseline module split: both runs passed 7 tests (3.42 and 3.40 seconds).
 - Result: PASS.
 
 ## Phase 6 — Double verification
@@ -44,9 +44,19 @@
 
 ## Phase 8 — Final audit
 - Replaced the direct dependency list with 22 exact pins from `pip freeze` so the full working environment can be reproduced.
-- `python -m venv --clear .venv` was attempted and failed with Windows `WinError 5` on `.venv\Include`. Created `.venv_fresh`, installed all packages from `requirements.txt`, ran the suite twice, then ran the full demo and `verify_all.py` from that environment.
+- Replacing an existing local environment folder was denied by Windows (`WinError 5`); created a separate fresh environment, installed `requirements.txt`, ran the suite twice, then ran the full demo and `verify_all.py` from that environment.
 - Fresh environment result: 7/7 tests on both runs, 415 demo event records, the three required alerts printed, and the acceptance checklist passed 14/14.
 - Reopened the DOCX and PPTX with their Python libraries and confirmed the expected embedded images and 11 slides. PPTX slide rendering was inspected. DOCX page rendering and PDF export remain skipped because LibreOffice/Word are unavailable.
 - Final repository audit found no machine-specific personal paths in source, config, reports, logs, or text evidence. Runtime baseline keys are also project-relative for files inside the root.
 - Local commits were created for Phases 1–8 after their implementation groups were complete; Phase 0 was committed at environment setup.
 - Result: PASS with recorded Windows folder-removal and DOCX-rendering limitations.
+
+## Verification pass — independent audit and remediation
+
+- Re-read the build log, decisions, commit history, repository tree, source, tests, and initial evidence. Created `docs/AUDIT_FINDINGS.md` and `docs/IMPROVEMENT_PLAN.md` before changing the code.
+- Initial independent run: 7 tests passed twice; the clean demo produced 415 rows and 14/14 acceptance checks. Found incorrect first-process attribution, unstable bulk-window timing, missing demo controls, duplicate watcher notifications, and incomplete edge-case coverage.
+- Fixed event attribution matching, bulk window anchoring, demo `--pace` / `--no-color` / summary, acceptance validation, stable-file polling, path privacy, and same-path callback ordering. Added Windows metadata ignore patterns and tests. Commits: `3912e16`, `d1b1b76`, `28e04f1`.
+- Expanded the suite to 19 tests. The last clean demo produced 210 event rows: 200 CREATE, five COPY, two integrity MODIFY, one MOVE, one DELETE, and one BULK summary. Acceptance checks passed 16/16.
+- Ran real PowerShell and `cmd.exe` file operations against a temporary watched policy. Logs flushed after Ctrl+C. OneDrive sidecar and rename noise limited classification fidelity; the limitation and exact actions are recorded in `docs/AUDIT_FINDINGS.md`.
+- Independent PowerShell SHA-256 checks agreed with the integrity artifacts. The original 11-slide deck was rendered and all slides scored below 8; the report and presentation are being rebuilt from frozen evidence.
+- DOCX page rendering and PDF export remain unavailable because Word and LibreOffice are absent. Cross-platform runtime checks remain unrun on this Windows host.
