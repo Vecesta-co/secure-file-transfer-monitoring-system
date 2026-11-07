@@ -12,3 +12,10 @@
 - **Office rendering:** DOCX visual rendering and PDF export were skipped because Word and LibreOffice are not installed. The generated PPTX is rendered with the bundled presentation renderer.
 - **Draw.io:** Editable `.drawio` mxfile diagrams are generated alongside the high-resolution PNGs and checked as XML.
 - **Git identity:** Repository-local commits use `Project Intern <project-intern@localhost>`; global Git settings were not modified.
+
+
+## Final verification and presentation decisions
+- Generate report and presentation facts from the two captured final runs. Keep historical audit findings labeled as baseline, with the final post-remediation table taking precedence.
+- Use Word's page-break-before heading setting and omit the redundant six-row workflow table; the text and flowchart already describe that process, and the table had split onto a nearly empty page.
+- Keep the PDF alongside the DOCX because Microsoft Word is installed and the final report has been exported and visually checked here.
+- Retain honest limitations: simulated USB/cloud zones, no blocking, no reliable open/read audit, and best-effort process attribution.

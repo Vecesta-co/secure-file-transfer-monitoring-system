@@ -1,0 +1,7 @@
+DOCX/PDF render verification
+DOCX inspected with python-docx: 19 Heading paragraphs, 8 tables, 5 images, 1 section.
+Rendered by Microsoft Word COM ExportAsFixedFormat after updating fields and the table of contents.
+PDF: 20 pages, letter size (612 x 792 pt), confirmed with Poppler pdfinfo.
+Visual render: 20 page PNGs at evidence/final/docx_render_final/ and contact sheet at evidence/final/docx_contact_sheet.png.
+Visual result: PASS; page sequence and content inspected, with no split workflow table or blank chapter page.
+Poppler emitted missing display font notices for Symbol and ArialUnicode during rasterization; the rendered pages were inspected and the figures/tables remained visible.

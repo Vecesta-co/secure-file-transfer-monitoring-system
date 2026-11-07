@@ -1,0 +1,7 @@
+Sabotage checks (real pytest runs; exit code 1 is the expected result):
+
+- Hash comparison forced to return a match: `tests/test_core.py::test_copy_detection_and_integrity_mismatch` failed because expected integrity MISMATCH but observed OK. Exit 1.
+- Bulk threshold disabled: `tests/test_core.py::test_bulk_window_aggregates_real_count` failed because no bulk alert was produced. Exit 1.
+- Sensitive-path classification forced false: `tests/test_core.py::test_policy_sensitive_zone_and_authorization` failed because the sensitive path was not detected. Exit 1.
+
+The raw tracebacks were omitted from this summary because pytest embeds the machine's absolute Python and temporary-directory paths. The full pytest outputs were inspected during the runs; this summary preserves the exact test names, assertion outcomes, and exit codes without exposing local paths.

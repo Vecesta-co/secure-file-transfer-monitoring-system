@@ -1,12 +1,11 @@
+========================================================================
+SECURE FILE TRANSFER MONITORING SYSTEM  |  SYNTHETIC DEMO
+========================================================================
 Baseline created for 6 synthetic files
 
-SCENARIO 1/9: Normal copy inside documents
+SCENARIO 1/9 -- Normal copy inside documents
 
-SCENARIO 2/9: Sensitive file copied to approved backup
+SCENARIO 2/9 -- Sensitive file copied to approved backup
 
-SCENARIO 3/9: Sensitive file copied to USB
-2026-11-06T20:21:12.652892+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key
-2026-11-06T20:21:12.652892+00:00 [HIGH] R2: Sensitive file copied to USB drive | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key
-
-SCENARIO 4/9: Sensitive file copied to cloud folder
-2026-11-06T20:21:14.100667+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/client_database.csv -> demo_workspace/cloud_sync_sim/client_database.csv
+SCENARIO 3/9 -- Sensitive file copied to USB
+2026-11-07T07:22:40.922625+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key

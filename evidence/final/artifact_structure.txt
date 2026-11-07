@@ -1,0 +1,9 @@
+DOCX heading paragraphs=19 tables=8 images=5 sections=1
+DOCX forbidden markers: TODO=False, lorem=False, XXX=False, undefined=False
+PPT slides=15 notes=15/15 note_words=65-77 pictures=3 charts=1 fonts=['Consolas', 'Segoe UI'] min_font_pt=12.0 maximum_body_shape_words=13 out_of_bounds=[]
+architecture.drawio: valid mxfile XML
+flowchart.drawio: valid mxfile XML
+architecture.png: 3547x1446, dpi=(299.9994, 299.9994)
+flowchart.png: 2617x2601, dpi=(299.9994, 299.9994)
+Project_Report.docx personal-path scan: clean
+Final_Presentation.pptx personal-path scan: clean

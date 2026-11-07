@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ftmon.hasher import hash_file
 from ftmon.baseline import create_baseline
+from ftmon.logger import write_alert
 from ftmon.monitor import TransferMonitor
 from ftmon.policy import Policy, evaluate
 from ftmon.report import generate_report
@@ -30,6 +31,14 @@ def test_hash_known_vector(tmp_path):
     result = hash_file(file, ["sha256", "md5"])
     assert result["sha256"] == hashlib.sha256(b"abc").hexdigest()
     assert result["md5"] == hashlib.md5(b"abc").hexdigest()
+
+
+def test_alert_without_destination_has_no_dangling_arrow(tmp_path, capsys):
+    event = {"timestamp": "2026-01-01T00:00:00+00:00", "src_path": "private/key.txt", "dest_path": ""}
+    write_alert(event, ("R5", "HIGH", "Sensitive file deleted"), tmp_path)
+    line = capsys.readouterr().out.strip()
+    assert line.endswith("| private/key.txt")
+    assert "->" not in line
 
 
 def test_hash_empty_unicode_and_50mb_file(tmp_path):

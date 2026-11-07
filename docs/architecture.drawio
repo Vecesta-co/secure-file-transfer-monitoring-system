@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" version="24.7.17" type="device">
+  <diagram id="architecture" name="Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1200" pageHeight="800">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n0" value="Configured folders" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="30" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" value="watchdog observer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="220" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" value="Monitor + hash index" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="410" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" value="Policy rules R0–R6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="600" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" value="JSONL + alerts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="790" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" value="Audit report MD / HTML / CSV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111B2E;fontColor=#E8EEF7;strokeColor=#22D3EE;" vertex="1" parent="1">
+          <mxGeometry x="980" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="edge0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#22D3EE;fontColor=#22D3EE;" edge="1" parent="1" source="n0" target="n1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#22D3EE;fontColor=#22D3EE;" edge="1" parent="1" source="n1" target="n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#22D3EE;fontColor=#22D3EE;" edge="1" parent="1" source="n2" target="n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#22D3EE;fontColor=#22D3EE;" edge="1" parent="1" source="n3" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#22D3EE;fontColor=#22D3EE;" edge="1" parent="1" source="n4" target="n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

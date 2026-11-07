@@ -1,0 +1,20 @@
+Secure File Transfer Monitoring System - acceptance checklist
+
+FAIL  Scenario 1 - normal copy
+FAIL  Scenario 2 - approved sensitive copy
+FAIL  Scenario 3 - sensitive USB copy
+FAIL  Scenario 4 - sensitive cloud copy
+FAIL  Scenario 5 - sensitive move
+FAIL  Scenario 6 - altered copy integrity alert
+FAIL  Scenario 7 - in-place tamper
+FAIL  Scenario 8 - sensitive deletion
+FAIL  Scenario 9 - one accurate 200-file bulk alert
+FAIL  Event records have required fields
+FAIL  Control scenarios have no high/critical alerts
+FAIL  Objective - event logging
+FAIL  Objective - unauthorized movement detection
+FAIL  Objective - file integrity
+FAIL  Objective - alerts
+PASS  Objective - audit report
+
+Result: 1/16 checks passed

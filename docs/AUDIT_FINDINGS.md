@@ -24,7 +24,7 @@ Audit date: 2026-11-06 (Windows 11, Python 3.11.9). Commands ran from the projec
 | Process attribution | PARTIAL | All 210 final demo records show `unknown`. The original psutil loop attributed the first unrelated process. It now matches the opened file path; psutil is absent here, so positive attribution remains unverified. |
 | Path privacy | PASS | Project paths are relative; configured external paths are represented with zone labels. No personal path appears in final event logs, report files, or office document text. |
 | Tests, initial audit | FAIL | Initial suite had 7 tests. It passed twice (3.44s and 3.42s) but did not test file-write ordering, rapid distinct writes, process matching, large files, path privacy, or a slow burst window. |
-| Tests, post-fix | PASS | 19 tests pass; final evidence stores two independent final runs. |
+| Tests, post-fix | PASS | Final suite has 20 tests; both final runs passed. |
 | Sabotage verification | PASS | Three deliberate code faults each caused the target regression test to fail, then source files were restored. Negative acceptance input exits nonzero. Details in `evidence/final/sabotage/`. |
 | README / CLI | PASS | Quick start and CLI reference were rewritten; `main.py --help` and subcommand help were checked against the reference. |
 | DOCX | PARTIAL | Original file opened with python-docx: 12 headings, 1 table, 7 images, 1 section, no TODO/lorem/XXX/undefined text. Original report was too short and lacked TOC, fields, chapter pagination, and live evidence values. Final page rendering remains unavailable because LibreOffice and Word are not installed. |
@@ -89,3 +89,49 @@ Scores are the baseline inspection of the 11 rendered original slides, before re
 | 11 | 4 | Integrity screenshot text is too small to read at presentation size. |
 
 The rendered contact sheet used for this inspection is an intermediate audit artifact; the final deck receives a fresh render, individual slide scores, and a contact sheet under `docs/ppt_preview/`.
+
+
+## Final post-remediation verification
+
+This section supersedes the earlier baseline notes where they say document rendering, draw.io files, or the redesigned deck are unavailable. Those earlier entries describe the initial audit state and are retained to show what was fixed.
+
+| Area | Final status | Final evidence |
+|---|---|---|
+| Application behavior | PASS | `python main.py demo --clean --no-color` run twice; both exit 0 and record 210 events with the same event mix. |
+| Automated tests | PASS | Fresh local environment; `python -m pytest -q` twice: 20 passed in 19.23s and 20 passed in 13.62s. Outputs: `evidence/final/pytest_run1.txt`, `pytest_run2.txt`. |
+| Acceptance checks | PASS | `python tools/verify_all.py` returned 16/16 for each clean demo. Both raw logs and reports are captured under `evidence/final/run1/` and `run2/`. |
+| Required alert examples | PASS | Final console and alert logs contain USB, hash-mismatch, and one R4 alert stating 200 files. The final run has 11 alert lines; R4 is one summary. |
+| Report and artifacts | PASS | README, traceability, double-run summary, DOCX, PPTX, and screenshot inputs regenerated from the two frozen runs by `tools/make_docs.py`. |
+| DOCX/PDF rendering | PASS | Word COM refreshed fields and TOC, exported `docs/Project_Report.pdf`; Poppler reported 20 letter pages. All page images are in `evidence/final/docx_render_final/`; contact sheet inspected. A table previously split across pages was removed; chapter starts now use page-break-before. |
+| Presentation | PASS | Rendered all 15 final slides into `docs/ppt_preview/` and inspected the contact sheet plus alert/hash slides individually. Deck structure: 15 slides, speaker notes on all 15, 3 terminal screenshots with alt text, and 1 native chart. All programmatic bounds/font/body-text checks in the generator passed. |
+| Slide scores | PASS | Hierarchy, alignment, spacing, contrast, consistency, visual interest, and overflow were reviewed. Every slide scores at least 8/10 (table below). |
+| Diagrams | PASS | `tools/make_docs.py` generated matching 300-dpi PNGs and editable architecture/flowchart `.drawio` XML. Generator parses the XML. Flow diagram shows Yes/No branches. |
+| Windows path and OS checks | PARTIAL | Windows drive, UNC, case-insensitive zones and path-with-spaces work in unit coverage. Real PowerShell and `cmd.exe` operations were observed and logs flushed on Ctrl+C, but OneDrive rename/sidecar events reduced classification fidelity; no real hardware or cloud service was used. |
+| Process attribution | PARTIAL | All 210 final demo rows show `unknown` because psutil is unavailable in this environment. Matching logic is best-effort and documented. |
+| Privacy scan | PASS | Final repository text and Office XML scan found no absolute personal paths; the temporary real-OS policy containing a local path was removed before commit. Example policy paths use the explicit placeholder `YourName`. OneDrive synchronized folders carry a ReadOnly/ReparsePoint attribute and deny delete-subdirectories; empty directories from the old OS probe and old preview images remain on disk but are ignored by Git. |
+| Fresh clone | PENDING | Clone the final commit, install pinned requirements in a new environment, run tests/demo/acceptance, and record results in `evidence/final/clone_check.md`. |
+| Git hygiene | PENDING | Check after the clone run, final commit, and tag. |
+
+### Final slide scores
+
+| Slide | Score / 10 | Review note |
+|---:|---:|---|
+| 1 | 9 | Clear identity and abstract network motif; identity placeholders are intentional. |
+| 2 | 8 | Four threat cards are aligned and differentiated by severity color. |
+| 3 | 9 | Five objectives form a consistent, readable card grid. |
+| 4 | 9 | Six-step pipeline has strong sequence and spacing. |
+| 5 | 9 | Editable module architecture is balanced and legible. |
+| 6 | 8 | Decision branches and Yes/No labels are visible; diagram is information-dense. |
+| 7 | 9 | Rule cards use consistent severity cues and concise conditions. |
+| 8 | 9 | Copy-detection sequence is clear and visually ordered. |
+| 9 | 8 | Nine outcomes fit the timeline grid; labels are concise. |
+| 10 | 9 | Run-derived metrics and native bar chart share a clear hierarchy. |
+| 11 | 8 | Real console captures show the three required alerts; fine log paths are small at overview scale. |
+| 12 | 8 | Match and mismatch hashes are side by side; long strings wrap but remain legible at full slide size. |
+| 13 | 9 | Repeat-run evidence is summarized cleanly with a traceability link. |
+| 14 | 9 | Limitations and future work are separated and honest. |
+| 15 | 8 | Three takeaways and Q&A close the story with sufficient whitespace. |
+
+### Final run comparison
+
+Both demos recorded 210 rows: CREATE=200, COPY=5, MODIFY=2, MOVE=1, DELETE=1, BULK=1. Severity totals were INFO=202, HIGH=6, CRITICAL=2. Each acceptance report passed 16/16. The generated report uses the final logs rather than manually entered totals. Run-specific test timings are recorded in the raw pytest transcripts.

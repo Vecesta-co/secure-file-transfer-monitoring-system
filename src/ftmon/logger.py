@@ -39,7 +39,10 @@ def write_event(event: dict, root: Path) -> None:
 
 def write_alert(event: dict, finding: tuple[str, str, str], root: Path) -> None:
     rule, severity, message = finding
-    line = f"{event.get('timestamp')} [{severity}] {rule}: {message} | {event.get('src_path')} -> {event.get('dest_path')}"
+    src_path = event.get("src_path") or ""
+    dest_path = event.get("dest_path") or ""
+    movement = f"{src_path} -> {dest_path}" if dest_path else src_path
+    line = f"{event.get('timestamp')} [{severity}] {rule}: {message} | {movement}"
     logs = root / "logs"
     logs.mkdir(parents=True, exist_ok=True)
     with LOCK, (logs / "alerts.log").open("a", encoding="utf-8") as out:

@@ -1,16 +1,16 @@
 {
-  "events": 415,
+  "events": 210,
   "violations": 8,
   "event_counts": {
-    "MODIFY": 207,
     "COPY": 5,
     "MOVE": 1,
+    "MODIFY": 2,
     "DELETE": 1,
     "CREATE": 200,
     "BULK": 1
   },
   "severities": {
-    "INFO": 407,
+    "INFO": 202,
     "HIGH": 6,
     "CRITICAL": 2
   }

@@ -1,6 +1,6 @@
 """Generate evidence-driven diagrams, report, and editable presentation."""
 from __future__ import annotations
-import hashlib, json, re, subprocess, sys, xml.etree.ElementTree as ET
+import hashlib, json, os, re, subprocess, sys, xml.etree.ElementTree as ET, zipfile
 from collections import Counter
 from pathlib import Path
 import matplotlib
@@ -213,7 +213,9 @@ def make_docx(run1,run2):
     end=OxmlElement("w:fldChar"); end.set(qn("w:fldCharType"),"end")
     for x in (begin,ins,sep,t,end): r._r.append(x)
     d.add_page_break()
-    def chapter(title): d.add_page_break(); d.add_heading(title,1)
+    def chapter(title):
+        heading=d.add_heading(title,1)
+        heading.paragraph_format.page_break_before=True
     d.add_heading("Abstract",1)
     d.add_paragraph(f"This report describes a local Python monitor that records file-system changes, classifies configured paths, compares SHA-256 hashes, applies rules R0–R6, and creates audit reports. The deterministic demo exercises ordinary and approved copies, simulated external destinations, file changes, deletion, and a 200-file burst. The final captured demo contains {len(run1['events'])} event rows. The tool is an audit aid: it does not block transfers or observe network protocols.")
     d.add_paragraph(f"The final automated suite reports {test_result(1)}. Two clean runs, independent hashes, sabotage checks, and the source limitations are detailed below.")
@@ -239,7 +241,6 @@ def make_docx(run1,run2):
     chapter("5. Workflow and policy branches")
     d.add_paragraph("The monitor classifies every event. If no sensitive or external policy condition applies, it records ordinary activity. A trigger leads to hash and authorization checks. A disallowed user produces R6; a content mismatch produces R3. The event is logged on each branch so the report can preserve a complete timeline.")
     add_picture(d,DOCS/"flowchart.png",5.9,"Figure 2. Classification, authorization, and integrity decisions.")
-    add_table(d,["Stage","Implementation"],[["Monitor","watchdog observes configured folders."],["Classify","Policy labels sensitive paths and destination zones."],["Hash","Chunked SHA-256 and stable-size polling."],["Authorize","Empty list allows local users; otherwise use an explicit allow-list."],["Log and alert","JSONL event records and rule-specific alert lines."],["Report","Markdown, HTML, CSV summary and timeline."]],[1.4,5.2])
 
     chapter("6. Implementation modules")
     for name,description in (("main.py","Argparse dispatch for hash, baseline, monitor, report, verify, and demo."),("hasher.py","Chunked hashes and stable-file polling."),("baseline.py","Initial hash and metadata index."),("policy.py","Path resolution, sensitive names, zones, authorization, and rules."),("handler.py","Watchdog adapter for filesystem notifications."),("monitor.py","Indexes, copy inference, rename correlation, and burst aggregation."),("logger.py","Thread-safe JSONL and alert output with optional ANSI color."),("report.py","Markdown, HTML, and CSV summaries and timelines."),("demo/run_demo.py","Nine synthetic scenarios with event checks.")):
@@ -416,7 +417,7 @@ def make_pptx(run1,run2):
     notes(s,talktracks[7])
 
     s=base_slide(prs,"Nine synthetic scenarios")
-    scenarios=(("1","Normal copy · R0"),("2","Approved backup · R0"),("3","USB · R1/R2"),("4","Cloud · R1/R2"),("5","Move · R1"),("6","Alter + share · R3"),("7","Tamper · R3"),("8","Delete · R5"),("9","200 files · R4"))
+    scenarios=(("1","Copy R0"),("2","Backup R0"),("3","USB R1/R2"),("4","Cloud R1/R2"),("5","Move R1"),("6","Share R3"),("7","Tamper R3"),("8","Delete R5"),("9","Bulk 200 R4"))
     for i,(num,label) in enumerate(scenarios):
         x=.8+(i%3)*4.1; y=1.3+(i//3)*1.62; rect(s,x,y,3.55,1,CARD,BORDER); text(s,num,x+.18,y+.21,.5,.5,20,CYAN,True,MONO); text(s,label,x+.78,y+.2,2.55,.58,15,WHITE,True)
     notes(s,talktracks[8])
@@ -463,14 +464,35 @@ def make_pptx(run1,run2):
     notes(s,talktracks[12])
 
     s=base_slide(prs,"Current limits and possible extensions")
-    card(s,.8,1.55,5.75,3.7,"CURRENT LIMITS","Detects and records, but does not block\nUSB/cloud/share are configured paths\nProcess shows unknown without psutil\nNo Windows open/read audit",MEDIUM,15)
-    card(s,6.8,1.55,5.75,3.7,"FUTURE WORK","Native USB identity\nCloud-provider event sources\nSIEM alerts and signed logs\nLinux/macOS verification",TEAL,15)
+    card(s,.8,1.55,5.75,3.7,"CURRENT LIMITS","No blocking\nZones use paths\nUnknown process\nNo file-read audit",MEDIUM,15)
+    card(s,6.8,1.55,5.75,3.7,"FUTURE WORK","USB identity\nCloud event feeds\nSIEM + signed logs\nVerify Linux / macOS",TEAL,15)
     notes(s,talktracks[13])
 
     s=base_slide(prs,"Conclusion and questions")
     for i,(title,body) in enumerate((("ACTIVITY","A clear local event record"),("INTEGRITY","SHA-256 detects content changes"),("EVIDENCE","Tests connect rules to results"))): card(s,.85+i*4.12,2,3.6,1.75,title,body,(CYAN,TEAL,SUCCESS)[i],16)
     text(s,"Questions?",4.25,5,4.8,.7,30,CYAN,True,align=PP_ALIGN.CENTER); notes(s,talktracks[14])
-    prs.save(DOCS/"Final_Presentation.pptx"); validate_pptx(DOCS/"Final_Presentation.pptx")
+    prs.save(DOCS/"Final_Presentation.pptx")
+    fix_chart_axis_ids(DOCS/"Final_Presentation.pptx")
+    validate_pptx(DOCS/"Final_Presentation.pptx")
+
+
+def fix_chart_axis_ids(path):
+    """Normalize signed python-pptx axis IDs for strict OOXML renderers."""
+    temp=path.with_suffix(".normalized.pptx")
+    with zipfile.ZipFile(path,"r") as source, zipfile.ZipFile(temp,"w",zipfile.ZIP_DEFLATED) as target:
+        for info in source.infolist():
+            data=source.read(info.filename)
+            if info.filename.startswith("ppt/charts/chart") and info.filename.endswith(".xml"):
+                root=ET.fromstring(data); mapping={}
+                for element in root.iter():
+                    if element.tag.endswith("axId") or element.tag.endswith("crossAx"):
+                        old=element.get("val")
+                        if old is not None:
+                            if old not in mapping: mapping[old]=str(10000+len(mapping))
+                            element.set("val",mapping[old])
+                data=ET.tostring(root,encoding="utf-8",xml_declaration=True)
+            target.writestr(info,data)
+    os.replace(temp,path)
 
 
 def validate_pptx(path):
@@ -480,7 +502,7 @@ def validate_pptx(path):
     assert all(sh.left>=0 and sh.top>=0 and sh.left+sh.width<=p.slide_width and sh.top+sh.height<=p.slide_height for s in p.slides for sh in s.shapes)
     for i,s in enumerate(p.slides,1):
         body=[sh for sh in s.shapes if sh.has_text_frame and SI(1.1)<sh.top<SI(6.8) and sh.height>SI(.25)]
-        assert len(" ".join(sh.text for sh in body).split())<=45, f"slide {i} too wordy"
+        assert len(" ".join(sh.text for sh in body).split())<=35, f"slide {i} too wordy"
         for sh in s.shapes:
             if sh.has_text_frame:
                 for para in sh.text_frame.paragraphs:

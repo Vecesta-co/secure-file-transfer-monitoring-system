@@ -1,104 +1,86 @@
 # Secure File Transfer Monitoring System
 
-A small defensive file monitoring tool for recording filesystem activity, identifying sensitive-file movement, comparing SHA-256 hashes, and producing an audit report. The demo uses synthetic text files only. It makes no network calls and writes its sample workspace under this repository.
+A local defensive monitor that records configured file activity, checks sensitive-file movement and SHA-256 integrity, and writes reviewable audit reports. The synthetic demo uses dummy files and makes no network calls.
 
 ## Features
 
-- Monitors configured folders recursively with `watchdog`.
-- Records create, copy-like, move, delete, and modify activity as JSON Lines, with a separate human-readable alert log.
-- Classifies sensitive paths, approved destinations, USB-like folders, cloud-sync folders, and network-share folders.
-- Checks SHA-256 and optional MD5 hashes; detects changed copies and in-place modifications.
-- Applies rules R0–R6, including sensitive movement, external-zone transfer, integrity failure, bulk transfer, deletion, and user authorization.
-- Generates Markdown, self-contained HTML, and CSV audit outputs.
-- Includes an automatic nine-scenario synthetic demo and repeatable acceptance checks.
+- Recursive folder monitoring with watchdog.
+- JSONL activity, human-readable alerts, and Markdown / HTML / CSV reports.
+- Path-based sensitive, approved, USB, cloud, and network-share zones.
+- SHA-256 checks, copy inference, user allow-list, and bulk-window alerting.
+- Nine repeatable scenarios and automated acceptance checks.
 
 ## Architecture
 
-![System architecture](docs/architecture.png)
-
-```mermaid
-flowchart LR
-  FS[Watched folders] --> WD[watchdog observer]
-  WD --> MON[Event classification and hash index]
-  MON --> POL[Policy rules R0–R6]
-  POL --> LOG[JSONL events and alerts]
-  LOG --> REP[Markdown, HTML, CSV report]
-```
-
-## Requirements and installation
-
-Python 3.10 or newer is required. The project was built with Python 3.11.9 on Windows. Create and activate a virtual environment, then install pinned dependencies:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-On macOS or Linux, activate with `source .venv/bin/activate` instead. The monitor attributes process names only when optional `psutil` is installed; otherwise it records `unknown`.
+![Architecture diagram](docs/architecture.png)
 
 ## Quick start
 
-Run the complete synthetic simulation:
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+Run the demo, tests, and report:
 
 ```powershell
 python main.py demo --clean
+python -m pytest -q
+python main.py report
 ```
 
-The demo creates a baseline, exercises nine scenarios, prints alerts, and writes `logs/` and `reports/`. It exits nonzero if one of the required sample alerts is missing.
+## Demo evidence
 
-Expected alert examples include:
+The latest frozen demo contains **210 event rows** (BULK=1, COPY=5, CREATE=200, DELETE=1, MODIFY=2, MOVE=1) and passed **16/16 checks**. Numbers are generated from the captured event log.
 
-```text
-Sensitive file copied to USB drive
-Integrity Failure: File hash mismatch detected
-Suspicious movement: 200 files transferred to unknown directory
-```
+![USB alert](evidence/screenshots/usb_alert.png)
+
+![Integrity alert](evidence/screenshots/integrity_alert.png)
+
+![Bulk transfer alert](evidence/screenshots/bulk_alert.png)
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `python main.py baseline [--policy config/policy.json]` | Hash files in watched folders into `data/baseline.json`. |
-| `python main.py monitor [--policy config/policy.json]` | Monitor until Ctrl+C; run `baseline` first for integrity comparisons. |
-| `python main.py report [--policy config/policy.json]` | Generate Markdown, HTML, and CSV from the current event log. |
-| `python main.py verify source copied` | Print both SHA-256 values and MATCH/MISMATCH; mismatch exits 1. |
-| `python main.py hash file` | Print SHA-256 and MD5. |
-| `python main.py demo --clean` | Run the full deterministic simulation from a clean output state. |
+| `python main.py baseline [--policy FILE]` | Build the hash baseline. |
+| `python main.py monitor [--policy FILE]` | Watch configured folders until Ctrl+C. |
+| `python main.py report [--policy FILE]` | Regenerate reports from the current log. |
+| `python main.py hash FILE` | Print SHA-256 and MD5. |
+| `python main.py verify SOURCE COPY` | Compare SHA-256; mismatch returns exit code 1. |
+| `python main.py demo --clean --pace 3` | Run all cases with three seconds between scenario starts. |
+| `python main.py demo --clean --no-color` | Run without ANSI color. |
 | `python -m pytest -q` | Run automated tests. |
-| `python tools/verify_all.py` | Check demo scenarios and project objectives against current logs. |
+| `python tools/verify_all.py` | Check scenarios and acceptance output. |
 
-## Policy configuration
+## Configure real folders
 
-Edit `config/policy.json` to specify watched and sensitive folders, approved destinations, external zones, restricted file types, authorization, ignored names, and bulk thresholds. Paths may be relative to the repository root or absolute. `config/policy.real-world.example.json` shows how a user could map USB, OneDrive, Dropbox, or network share paths. Replace its example paths with paths appropriate to the target machine before using a custom policy. The example is not active by default.
+Edit `config/policy.json` or pass a separate policy with `--policy`. Set watched and sensitive locations, approved backup folders, and external zones for a USB drive letter, OneDrive/Dropbox folder, or network share. Review `authorized_users` and `ignore_patterns`. The example policy uses placeholder paths; replace them before use. Do not point the demo at real sensitive files.
 
-An empty `authorized_users` list treats the current local user as authorized. A non-empty list allows only listed account names to touch sensitive files. Keep `allowed_destinations` narrowly scoped.
+Example alert:
 
-## Reports and evidence
-
-- `logs/file_events.jsonl` — one structured event per line.
-- `logs/alerts.log` — readable rule findings.
-- `reports/audit_report.md`, `reports/audit_report.html`, `reports/events.csv` — generated audit views.
-- `evidence/` — real console transcripts, acceptance results, test outputs, screenshots rendered from those transcripts, and hash comparisons.
-- `docs/Project_Report.docx` and `docs/Final_Presentation.pptx` — internship hand-in drafts with identity placeholders.
+```text
+[HIGH] R2: Sensitive file copied to USB drive
+```
 
 ## Limitations
 
-Filesystem notification APIs differ by platform and may coalesce events. Copy detection is inferred from matching hashes because `watchdog` does not provide a portable copy event. The monitor recognizes delete/create rename pairs as moves on Windows. New-file creation is used as an upload/download-like signal; this tool does not observe network protocols. USB, cloud, and network detection depends on paths explicitly configured in policy. The Windows build does not log file-open/read access. Process attribution is best-effort and currently records `unknown` unless optional `psutil` support is installed. Test execution in this session was on Windows; macOS and Linux were not available for direct verification.
+This tool detects and records activity; it does not block transfers. External zones are configured paths, not hardware identity or network inspection. Windows open/read auditing is not implemented. Process fields remain `unknown` here because psutil is unavailable. Filesystem notifications vary by platform and sync software. Windows was checked; test other systems before relying on them.
 
-## Project layout
+## Project structure
 
 ```text
-main.py                 CLI entry point
-config/                 JSON policy examples
-src/ftmon/              hashing, policy, logging, monitoring, reports
-demo/run_demo.py        nine synthetic scenarios
-tests/                  unit and polling-based integration tests
-tools/                  acceptance, screenshot, and document generators
-logs/ reports/ data/    generated runtime outputs
-evidence/ docs/         verification artifacts and project documentation
+main.py                 command-line entry point
+config/                 active and example policies
+src/ftmon/              hashing, monitoring, policy, logs and reports
+demo/run_demo.py        synthetic nine-scenario demonstration
+tests/                  unit and watcher checks
+tools/                  acceptance and artifact generation
+docs/                   report, presentation, diagrams, and guides
+evidence/final/          frozen runs and verification
 ```
 
 ## License
 
-MIT; see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

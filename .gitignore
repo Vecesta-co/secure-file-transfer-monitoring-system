@@ -11,3 +11,7 @@ data/*
 .DS_Store
 evidence/run*/logs/logs/
 evidence/run*/reports/reports/
+evidence/real_os/
+evidence/audit_old_contact.png
+evidence/audit_old_slides/
+evidence/final/docx_render/

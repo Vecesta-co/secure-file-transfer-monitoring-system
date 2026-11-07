@@ -4,7 +4,7 @@
 
 - [ ] `README.md` and the MIT `LICENSE`.
 - [ ] Monitoring toolkit: `main.py`, `src/ftmon/`, `config/`, and `requirements.txt`.
-- [ ] `docs/Project_Report.docx` and `docs/Final_Presentation.pptx`.
+- [ ] `docs/Project_Report.docx`, `docs/Project_Report.pdf`, and `docs/Final_Presentation.pptx`.
 - [ ] `docs/architecture.png`, `docs/flowchart.png`, and both editable `.drawio` diagrams.
 - [ ] `evidence/final/` with two captured runs, test outputs, acceptance results, hash checks, sabotage checks, and clone verification.
 - [ ] `evidence/screenshots/` terminal images and their source transcripts.
@@ -27,4 +27,4 @@
 4. Choose **File → Save As** (or **Export**) and select **PDF** as the file type.
 5. Save the PDF beside the DOCX and open it once to confirm the pages render correctly.
 
-This environment has no Word or LibreOffice PDF converter, so no PDF is included in the generated evidence.
+A PDF was exported with Microsoft Word and visually inspected as part of the final verification; `docs/Project_Report.pdf` is included.

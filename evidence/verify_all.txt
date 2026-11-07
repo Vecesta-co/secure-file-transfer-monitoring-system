@@ -8,11 +8,13 @@ PASS  Scenario 5 - sensitive move
 PASS  Scenario 6 - altered copy integrity alert
 PASS  Scenario 7 - in-place tamper
 PASS  Scenario 8 - sensitive deletion
-PASS  Scenario 9 - 200-file bulk
+PASS  Scenario 9 - one accurate 200-file bulk alert
+PASS  Event records have required fields
+PASS  Control scenarios have no high/critical alerts
 PASS  Objective - event logging
 PASS  Objective - unauthorized movement detection
 PASS  Objective - file integrity
 PASS  Objective - alerts
 PASS  Objective - audit report
 
-Result: 14/14 checks passed
+Result: 16/16 checks passed

@@ -60,3 +60,7 @@
 - Ran real PowerShell and `cmd.exe` file operations against a temporary watched policy. Logs flushed after Ctrl+C. OneDrive sidecar and rename noise limited classification fidelity; the limitation and exact actions are recorded in `docs/AUDIT_FINDINGS.md`.
 - Independent PowerShell SHA-256 checks agreed with the integrity artifacts. The original 11-slide deck was rendered and all slides scored below 8; the report and presentation are being rebuilt from frozen evidence.
 - DOCX page rendering and PDF export remain unavailable because Word and LibreOffice are absent. Cross-platform runtime checks remain unrun on this Windows host.
+
+- Final report layout review found a workflow table split across pages. Removed the duplicate table and converted chapter starts to page-break-before headings; regenerated all run-derived deliverables after each code change and repeated tests plus two demos.
+- Final verification: 20 tests passed twice (19.23s, 13.62s); two demos exited 0 with 210 rows each; acceptance 16/16 on both runs. Word refreshed the TOC and exported a 20-page PDF; rendered all PDF pages and all 15 presentation slides for visual review. Every slide scored 8/10 or higher.
+- Independent audit found no absolute personal paths in final text/Office XML. Real OS watcher validation remains PARTIAL due OneDrive sidecar and rename noise; process attribution remains `unknown` in the demo because psutil was unavailable. Fresh clone and final repository hygiene checks are the remaining finalization step.
