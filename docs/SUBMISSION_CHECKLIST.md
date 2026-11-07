@@ -11,7 +11,8 @@
 
 ## Personalize before hand-in
 
-- [ ] Replace `[Your Name]`, `[Company]`, `[Supervisor]`, and `[Date]` in the report and presentation.
+- [x] Add the author and internship attribution to the report and presentation covers.
+- [ ] Replace `[Supervisor]` and `[Date]` in the report and presentation if needed.
 - [ ] Review every speaker note and the limitations slide.
 - [ ] Review the policy paths. Keep the synthetic demo on its dummy workspace.
 - [ ] Record a real desktop video using `docs/RECORDING_GUIDE.md`.

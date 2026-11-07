@@ -1,9 +1,9 @@
 # GitHub repository setup
 
-- **Suggested repository name:** `secure-file-transfer-monitor`
+- **Repository name:** `secure-file-transfer-monitoring-system`
 - **Description:** A Python file-system monitoring demo with path-based DLP rules, SHA-256 integrity checks, alerts, and audit reports.
 - **Topics:** `python`, `cybersecurity`, `blue-team`, `data-loss-prevention`, `file-integrity`, `audit-logging`, `watchdog`
-- **Visibility:** Choose public only after checking that the repository contains no real personal or confidential data.
+- **Visibility:** Public (`Vecesta-co/secure-file-transfer-monitoring-system`).
 
 Create an empty GitHub repository with the suggested name. From this local project folder, run the commands below and replace the sample account with your GitHub username or organization:
 

@@ -204,7 +204,7 @@ def make_docx(run1,run2):
     p=d.add_paragraph(style="Title"); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run("Secure File Transfer Monitoring System")
     p=d.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; r=p.add_run("Project report and verification record"); r.font.size=Pt(15); r.font.color.rgb=DocRGB(35,86,120)
     p=d.add_paragraph("Blue Team  ·  Data Loss Prevention  ·  File Integrity Monitoring",style="Subtitle"); p.alignment=WD_ALIGN_PARAGRAPH.CENTER
-    for value in ("[Your Name]","[Company]","[Supervisor]","[Date]"):
+    for value in ("Vansh Dhawan","First internship project · Unified Mentors","[Supervisor]","[Date]"):
         p=d.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run(value)
     d.add_page_break(); d.add_heading("Contents",1)
     p=d.add_paragraph(); r=p.add_run(); begin=OxmlElement("w:fldChar"); begin.set(qn("w:fldCharType"),"begin")
@@ -352,7 +352,7 @@ def make_pptx(run1,run2):
 
     s=base_slide(prs,"Secure File Transfer Monitoring System")
     text(s,"Blue Team  ·  Data Loss Prevention  ·  File Integrity Monitoring",.9,1.42,8,.42,18,CYAN,True)
-    for i,label in enumerate(("[Your Name]","[Company]","[Supervisor]","[Date]")): text(s,label,.95,2.35+i*.43,4.6,.32,15,MUTED)
+    for i,label in enumerate(("Vansh Dhawan","First internship project · Unified Mentors","[Supervisor]","[Date]")): text(s,label,.95,2.35+i*.43,4.6,.32,15,MUTED)
     for x,y,r,c in ((9.6,2.1,.78,CYAN),(10.9,3.05,.56,TEAL),(9.25,4.15,.44,INFO),(11.25,5,.84,SUCCESS),(8.5,3.1,.34,MEDIUM)):
         sh=s.shapes.add_shape(MSO_SHAPE.OVAL,SI(x),SI(y),SI(r),SI(r)); color(sh,CARD2,c)
     for x1,y1,x2,y2 in ((9.95,2.6,10.95,3.2),(9.3,3.35,9.45,4.2),(9.7,4.4,11.25,5.2),(11.2,3.6,11.55,5),(9.7,2.4,8.8,3.2)):
