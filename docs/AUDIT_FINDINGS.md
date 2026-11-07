@@ -109,8 +109,8 @@ This section supersedes the earlier baseline notes where they say document rende
 | Windows path and OS checks | PARTIAL | Windows drive, UNC, case-insensitive zones and path-with-spaces work in unit coverage. Real PowerShell and `cmd.exe` operations were observed and logs flushed on Ctrl+C, but OneDrive rename/sidecar events reduced classification fidelity; no real hardware or cloud service was used. |
 | Process attribution | PARTIAL | All 210 final demo rows show `unknown` because psutil is unavailable in this environment. Matching logic is best-effort and documented. |
 | Privacy scan | PASS | Final repository text and Office XML scan found no absolute personal paths; the temporary real-OS policy containing a local path was removed before commit. Example policy paths use the explicit placeholder `YourName`. OneDrive synchronized folders carry a ReadOnly/ReparsePoint attribute and deny delete-subdirectories; empty directories from the old OS probe and old preview images remain on disk but are ignored by Git. |
-| Fresh clone | PENDING | Clone the final commit, install pinned requirements in a new environment, run tests/demo/acceptance, and record results in `evidence/final/clone_check.md`. |
-| Git hygiene | PENDING | Check after the clone run, final commit, and tag. |
+| Fresh clone | PASS | Cloned commit `d577902`; pinned install succeeded, 20 tests passed, clean demo exited 0 with 210 rows, acceptance passed 16/16. Raw outputs are under `evidence/final/clone/`. Removing the outside-workspace clone was attempted but Windows denied deletion (WinError 5); see `evidence/final/clone_check.md`. |
+| Git hygiene | PASS | Final local commit and annotated `v1.0.0` tag are present; tracked status is clean; no virtual environment, cache, or demo workspace is tracked; no tracked file exceeds 10 MB; MIT license and pinned requirements are present. No remote push performed. |
 
 ### Final slide scores
 

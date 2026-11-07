@@ -1,0 +1,11 @@
+2026-11-07T07:30:21.201576+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key
+2026-11-07T07:30:21.201576+00:00 [HIGH] R2: Sensitive file copied to USB drive | demo_workspace/sensitive/server.key -> demo_workspace/usb_drive_sim/server.key
+2026-11-07T07:30:23.062280+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/client_database.csv -> demo_workspace/cloud_sync_sim/client_database.csv
+2026-11-07T07:30:23.062280+00:00 [HIGH] R2: Sensitive file copied to cloud folder | demo_workspace/sensitive/client_database.csv -> demo_workspace/cloud_sync_sim/client_database.csv
+2026-11-07T07:30:24.928269+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/employee_salaries.csv -> demo_workspace/unknown_dir/employee_salaries.csv
+2026-11-07T07:30:26.769576+00:00 [HIGH] R1: Sensitive file moved outside approved location | demo_workspace/sensitive/passwords_backup.txt -> demo_workspace/network_share_sim/passwords_backup.txt
+2026-11-07T07:30:26.769576+00:00 [HIGH] R2: Sensitive file copied to network share | demo_workspace/sensitive/passwords_backup.txt -> demo_workspace/network_share_sim/passwords_backup.txt
+2026-11-07T07:30:28.599124+00:00 [CRITICAL] R3: Integrity Failure: File hash mismatch detected | demo_workspace/network_share_sim/passwords_backup.txt
+2026-11-07T07:30:30.455714+00:00 [CRITICAL] R3: Integrity Failure: File hash mismatch detected | demo_workspace/sensitive/client_database.csv
+2026-11-07T07:30:32.277956+00:00 [HIGH] R5: Sensitive file deleted | demo_workspace/sensitive/server.key
+2026-11-07T07:30:54.003450+00:00 [HIGH] R4: Suspicious movement: 200 files transferred to unknown directory |  -> demo_workspace/unknown_dir/bulk/tiny_199.txt

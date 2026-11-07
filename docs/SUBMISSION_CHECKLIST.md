@@ -16,7 +16,7 @@
 - [ ] Review the policy paths. Keep the synthetic demo on its dummy workspace.
 - [ ] Record a real desktop video using `docs/RECORDING_GUIDE.md`.
 - [ ] Check the final demo and tests on the computer used for the presentation.
-- [ ] Export a PDF copy of the report if your submission portal requires one.
+- [x] Export a PDF copy of the report; `docs/Project_Report.pdf` is included.
 - [ ] Review the project repository page and push only after checking the remote URL.
 
 ## Export DOCX to PDF in Microsoft Word
