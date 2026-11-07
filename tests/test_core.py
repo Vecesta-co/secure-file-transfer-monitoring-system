@@ -150,6 +150,35 @@ def test_metadata_only_notification_does_not_create_duplicate_change(tmp_path):
     assert not (tmp_path / "logs" / "file_events.jsonl").exists()
 
 
+def test_first_write_notification_can_arrive_before_create(tmp_path):
+    policy = Policy(values(), tmp_path)
+    source = tmp_path / "watched" / "new-file.txt"
+    source.parent.mkdir(parents=True)
+    source.write_text("complete contents")
+    monitor = TransferMonitor(policy, tmp_path)
+    monitor._handle("MODIFY", source)
+    monitor._handle("CREATE", source)
+    events = [json.loads(line) for line in (tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()]
+    assert len(events) == 1
+    assert events[0]["event_type"] == "CREATE"
+
+
+def test_late_create_after_content_change_is_recorded_as_integrity_failure(tmp_path):
+    policy = Policy(values(), tmp_path)
+    source = tmp_path / "watched" / "late-create.txt"
+    source.parent.mkdir(parents=True)
+    source.write_text("original")
+    baseline = tmp_path / "data" / "baseline.json"
+    create_baseline(policy, baseline)
+    monitor = TransferMonitor(policy, tmp_path, baseline)
+    source.write_text("modified")
+    monitor._handle("CREATE", source)
+    event = json.loads((tmp_path / "logs" / "file_events.jsonl").read_text().splitlines()[-1])
+    assert event["event_type"] == "MODIFY"
+    assert event["integrity"] == "MISMATCH"
+    assert "R3" in event["rule_id"]
+
+
 def test_bulk_window_aggregates_real_count(tmp_path):
     policy = Policy(values(), tmp_path)
     monitor = TransferMonitor(policy, tmp_path)
@@ -202,6 +231,16 @@ def test_external_configured_paths_are_logged_without_user_directory(tmp_path):
     shown = monitor._display(external / "OneDrive" / "Personal" / "file.txt")
     assert shown == "CLOUD:/Personal/file.txt"
     assert "external-drive" not in shown
+
+
+def test_policy_ignore_pattern_suppresses_windows_folder_metadata(tmp_path):
+    policy = Policy({**values(), "ignore_patterns": ["desktop.ini"]}, tmp_path)
+    monitor = TransferMonitor(policy, tmp_path)
+    sidecar = tmp_path / "watched" / "desktop.ini"
+    sidecar.parent.mkdir()
+    sidecar.write_text("folder metadata")
+    monitor._handle("CREATE", sidecar)
+    assert not (tmp_path / "logs" / "file_events.jsonl").exists()
 
 
 def test_authorized_user_policy_fires_for_current_and_allows_listed_user(tmp_path, monkeypatch):

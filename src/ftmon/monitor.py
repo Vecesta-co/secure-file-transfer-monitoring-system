@@ -162,9 +162,17 @@ class TransferMonitor:
                 fingerprint = (stat.st_size, stat.st_mtime_ns)
             except OSError:
                 fingerprint = None
+            old = self.index.get(self._key(src))
+            if event_type == "MODIFY" and old is None and src.exists():
+                # A backend can deliver a write notification before its create
+                # notification. The first observation is a create-like event.
+                event_type = "CREATE"
+            elif event_type == "CREATE" and old is not None:
+                # A delayed create callback for an indexed path represents a
+                # later write or a duplicate notification, not a second copy.
+                event_type = "MODIFY"
             if self._dedup(event_type, str(src), str(dest), fingerprint):
                 return
-            old = self.index.get(self._key(src))
             before = (old or {}).get("sha256", "")
             after = ""
             if event_type == "MODIFY" and old and src.exists():

@@ -115,7 +115,7 @@ def run(clean: bool = True, pace: float = 0, color: bool = True) -> int:
     print("\n+" + "-" * 68 + "+")
     print("| FINAL SUMMARY".ljust(69) + "|")
     print("+" + "-" * 68 + "+")
-    print(f"| Events: {summary['events']:<10} INFO: {summary['severities'].get('INFO', 0):<8} HIGH: {summary['severities'].get('HIGH', 0):<8} CRITICAL: {summary['severities'].get('CRITICAL', 0):<5}|")
+    print(f"| Events: {summary['events']:<8} INFO: {summary['severities'].get('INFO', 0):<6} MEDIUM: {summary['severities'].get('MEDIUM', 0):<6} HIGH: {summary['severities'].get('HIGH', 0):<5} CRITICAL: {summary['severities'].get('CRITICAL', 0):<5}|")
     print("| Required alert checks:".ljust(69) + "|")
     for msg in expected:
         print(f"| [{'PASS' if msg in alerts else 'FAIL'}] {msg}".ljust(69) + "|")

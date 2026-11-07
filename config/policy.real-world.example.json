@@ -12,5 +12,5 @@
   "authorized_users": [],
   "bulk_transfer": {"threshold_files": 50, "window_seconds": 10},
   "hash_algorithms": ["sha256", "md5"],
-  "ignore_patterns": ["*.tmp", "*.swp", "~$*", ".DS_Store"]
+  "ignore_patterns": ["*.tmp", "*.swp", "~$*", ".DS_Store", "desktop.ini"]
 }
